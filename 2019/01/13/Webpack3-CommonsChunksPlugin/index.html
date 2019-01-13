@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<html class="theme-next gemini" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=6.6.0" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=6.6.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=6.6.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=6.6.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=6.6.0" color="#222">
+
+
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '6.6.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="本来第一篇博客是打算写 webpack 的，看了几天之后，发现配置项实在是太多了，文档也不是很全，看的我有点儿怀疑我自己。就把目标从通读 webpack 变成了把公司现有的基于 webpack3 的项目升级到 webpack4。升级之前先看了通过 vue-cli 生成的 webpack 配置文件。由于 webpack4 移除了 CommonsChunkPlugin这个插件，在这上面费时间较多。 (">
+<meta name="keywords" content="webpack3">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Webpack3 CommonsChunkPlugin配置详解">
+<meta property="og:url" content="https://heyyihai.github.io/2019/01/13/Webpack3-CommonsChunksPlugin/index.html">
+<meta property="og:site_name" content="yihai&#39;s blog">
+<meta property="og:description" content="本来第一篇博客是打算写 webpack 的，看了几天之后，发现配置项实在是太多了，文档也不是很全，看的我有点儿怀疑我自己。就把目标从通读 webpack 变成了把公司现有的基于 webpack3 的项目升级到 webpack4。升级之前先看了通过 vue-cli 生成的 webpack 配置文件。由于 webpack4 移除了 CommonsChunkPlugin这个插件，在这上面费时间较多。 (">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-01-13T13:32:19.577Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Webpack3 CommonsChunkPlugin配置详解">
+<meta name="twitter:description" content="本来第一篇博客是打算写 webpack 的，看了几天之后，发现配置项实在是太多了，文档也不是很全，看的我有点儿怀疑我自己。就把目标从通读 webpack 变成了把公司现有的基于 webpack3 的项目升级到 webpack4。升级之前先看了通过 vue-cli 生成的 webpack 配置文件。由于 webpack4 移除了 CommonsChunkPlugin这个插件，在这上面费时间较多。 (">
+
+
+
+
+
+
+  <link rel="canonical" href="https://heyyihai.github.io/2019/01/13/Webpack3-CommonsChunksPlugin/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Webpack3 CommonsChunkPlugin配置详解 | yihai's blog</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+    .use-motion .motion-element,
+    .use-motion .brand,
+    .use-motion .menu-item,
+    .sidebar-inner,
+    .use-motion .post-block,
+    .use-motion .pagination,
+    .use-motion .comments,
+    .use-motion .post-header,
+    .use-motion .post-body,
+    .use-motion .collection-title { opacity: initial; }
+
+    .use-motion .logo,
+    .use-motion .site-title,
+    .use-motion .site-subtitle {
+      opacity: initial;
+      top: initial;
+    }
+
+    .use-motion .logo-line-before i { left: initial; }
+    .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">yihai's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>标签</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>分类</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://heyyihai.github.io/2019/01/13/Webpack3-CommonsChunksPlugin/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="heyyihai">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="https://avatars3.githubusercontent.com/u/23374615?s=460&v=4">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yihai's blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Webpack3 CommonsChunkPlugin配置详解
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-01-13 21:07:22 / 修改时间：21:32:19" itemprop="dateCreated datePublished" datetime="2019-01-13T21:07:22+08:00">2019-01-13</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/webpack/" itemprop="url" rel="index"><span itemprop="name">webpack</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>本来第一篇博客是打算写 <code>webpack</code> 的，看了几天之后，发现配置项实在是太多了，文档也不是很全，看的我有点儿怀疑我自己。就把目标从通读 <code>webpack</code> 变成了把公司现有的基于 <code>webpack3</code> 的项目升级到 <code>webpack4</code>。升级之前先看了通过 <code>vue-cli</code> 生成的 <code>webpack</code> 配置文件。由于 <code>webpack4</code> 移除了 <code>CommonsChunkPlugin</code>这个插件，在这上面费时间较多。</p>
+<p>(关于顺序问题我还没有弄清楚，现在的博客应该没有几个人看，我就先发布了让自己开心一下吧！)</p>
+<a id="more"></a>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>在一个单页面项目中，有我们自己编写的业务代码，使用的第三方库的代码，还有 <code>webpack</code> 构建后的 <code>manifest</code> 文件，从缓存的角度来说，这三种代码需要打包到不同的文件中。如果部分代码是动态导入的，那动态导入的代码需要放在单独的文件中。存在多个入口文件的话，还需要提取出公共模块的代码。<code>CommonsChunkPlugin</code> 就是用来完成上述的代码拆分的。</p>
+<h2 id="可配置属性"><a href="#可配置属性" class="headerlink" title="可配置属性"></a>可配置属性</h2><ul>
+<li><p><code>name</code> ：<br>  打包出的<code>chunk</code>的<code>name</code>。就是<code>[name][id][hash][chunkhash]</code>的那个<code>name</code>。<br>  如果设置的值与当前已存在的 <code>chunk</code> 的 <code>name</code> 相同，会将代码打包到当前已存在文件内。<br>  如果设置的值不存在，就会创建一个新的文件。</p>
+</li>
+<li><p><code>filename</code> ：<br>  对应 <code>output.filename</code> 与 <code>output.chunkFilename</code>，优先级高于这两个属性。设置值时遵循的规则也与这两个属性相同。(路径之类的也要在这里设置，所以还是直接使用<code>output</code>里面的吧)</p>
+</li>
+<li><p><code>chunks</code> ：<br>  指定从哪些 <code>chunk</code> 当中去找公共模块，省略该选项的时候，默认就是 <code>entry chunks</code>。<br>  推荐提取同步的公共模块时，设置 <code>chunks</code>，提取异步的公共模块时，设置<code>children: true</code>。</p>
+</li>
+<li><p><code>minChunks</code> ：<br>  默认值为 <code>2</code> 。我的理解是有多少个模块引用了它，才可以传入公共 <code>chunk</code>。 </p>
+<ul>
+<li>数字：数量必须大于等于 <code>2</code> ，或者少于等于 <code>chunks</code> 的数量</li>
+<li>函数：接受 <code>(module, count)</code> 两个参数，返回一个布尔值。可以在函数内进行规定好的逻辑来决定某个模块是否提取成为<code>commons chunk</code>。</li>
+<li><code>Infinity</code>：传入 <code>Infinity</code> 会马上生成公共 <code>chunk</code> ，但里面没有模块。</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p><code>children</code>：<br>  指定 <code>source chunks</code>，不可以与 <code>chunks</code> 属性一同设置。通常是与 <code>aysnc</code>一起使用，设置为 <code>true</code> 时，所有公共 <code>chunk</code> 的子模块都会被选择。<br>  推荐提取异步模块的时候，使用 <code>children: true</code>，不然要把需要提取的模块都在 <code>chunks</code> 中列出来。<br>  提取同步模块的公共模块，不设置 <code>chunks</code>，只设置 <code>children</code> 时，你是提取不出东西来的。</p>
+<p>  在 <code>main.js</code> 中加入下列代码，这三个文件都 <code>import</code> 了同一个 <code>async.js</code> 文件，在打包时，需要将 <code>async.js</code> 文件提取出来。</p>
+  <figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> Emoji = <span class="function"><span class="params">()</span> =&gt;</span> <span class="keyword">import</span>(<span class="comment">/* webpackChunkName: "Emoji111" */</span> <span class="string">'./components/Emoji'</span>)</span><br><span class="line"><span class="keyword">const</span> Photos = <span class="function"><span class="params">()</span> =&gt;</span> <span class="keyword">import</span>(<span class="comment">/* webpackChunkName: "Photos222" */</span> <span class="string">'./components/Photos'</span>)</span><br><span class="line"><span class="keyword">const</span> Photos2 = <span class="function"><span class="params">()</span> =&gt;</span> <span class="keyword">import</span>(<span class="comment">/* webpackChunkName: "Photos333" */</span> <span class="string">'./components/Photos2'</span>)</span><br></pre></td></tr></table></figure>
+<p>  下面两个设置的效果是相同的。</p>
+  <figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> webpack.optimize.CommonsChunkPlugin(&#123;</span><br><span class="line">  name: <span class="string">'app'</span>,</span><br><span class="line">  <span class="keyword">async</span>: <span class="literal">true</span>,</span><br><span class="line">  minChunks: <span class="number">2</span>,</span><br><span class="line">  chunks: [<span class="string">'Emoji111'</span>,<span class="string">'Photos222'</span>,<span class="string">'Photos333'</span>]</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+  <figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> webpack.optimize.CommonsChunkPlugin(&#123;</span><br><span class="line">  name: <span class="string">'app'</span>,</span><br><span class="line">  <span class="keyword">async</span>: <span class="literal">true</span>,</span><br><span class="line">  minChunks: <span class="number">2</span>,</span><br><span class="line">  children: <span class="literal">true</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><code>async</code>：不可以与 <code>filename</code> 一起设置。设置为 <code>true</code> 的会提取异步加载 <code>chunk</code> 中的公共模块。此时设置 <code>children</code> 为 <code>false</code> 是无效的。<ul>
+<li><code>true</code>：设置为 <code>true</code> 时，会从异步加载的 <code>chunk</code> 中提取公共的模块。</li>
+<li><code>&#39;string&#39;</code>：设置为字符串时，与 <code>true</code> 的作用是相同的，但是会将提取出的文件的 <code>name</code> 设置为该字符串。<br>  （还是那个 <code>[name][id][hash][chunkhash]</code>的 <code>[name]</code> ）</li>
+</ul>
+</li>
+</ul>
+<h2 id="项目代码示例"><a href="#项目代码示例" class="headerlink" title="项目代码示例"></a>项目代码示例</h2><p>项目的 <code>output</code> 配置如下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">output: &#123;</span><br><span class="line">  path: config.build.assetsRoot,</span><br><span class="line">  filename: utils.assetsPath(<span class="string">'js/[name].[chunkhash].js'</span>),</span><br><span class="line">  chunkFilename: utils.assetsPath(<span class="string">'js/[id][name].[chunkhash].js'</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="打包第三方库"><a href="#打包第三方库" class="headerlink" title="打包第三方库"></a>打包第三方库</h3><p>提取 <code>node_modules</code> 文件夹中的文件到 <code>vendor</code> 模块中。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> webpack.optimize.CommonsChunkPlugin(&#123;</span><br><span class="line">  name: <span class="string">'vendor'</span>,</span><br><span class="line">  minChunks (<span class="built_in">module</span>) &#123;</span><br><span class="line">    <span class="comment">// any required modules inside node_modules are extracted to vendor</span></span><br><span class="line">    <span class="keyword">return</span> (</span><br><span class="line">      <span class="built_in">module</span>.resource &amp;&amp;</span><br><span class="line">      /\.js$/.test(<span class="built_in">module</span>.resource) &amp;&amp;</span><br><span class="line">      <span class="built_in">module</span>.resource.indexOf(path.join(__dirname, <span class="string">'../node_modules'</span>)) === <span class="number">0</span></span><br><span class="line">    )</span><br><span class="line">  &#125;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure></p>
+<h3 id="打包-webpack-运行文件与模块清单"><a href="#打包-webpack-运行文件与模块清单" class="headerlink" title="打包 webpack 运行文件与模块清单"></a>打包 <code>webpack</code> 运行文件与模块清单</h3><p>避免每次打包生成的 <code>vendor.js</code> 对应的哈希值都会变化。<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 不设置 `minChunks：Infinity` 时也是会将 `manifest` 文件打包出来的。</span></span><br><span class="line"><span class="comment">// 但是 `vue-cli` 生成的文件中是这样写的，我就直接复制过来了。</span></span><br><span class="line"><span class="keyword">new</span> webpack.optimize.CommonsChunkPlugin(&#123;</span><br><span class="line">  name: <span class="string">'manifest'</span>,</span><br><span class="line">  minChunks: <span class="literal">Infinity</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure></p>
+<h3 id="打包异步文件"><a href="#打包异步文件" class="headerlink" title="打包异步文件"></a>打包异步文件</h3><p><code>name</code>：此处的 <code>name</code> 指定的是入口文件的 <code>name</code>，而不是打包出来的文件的 <code>name</code>。    </p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> webpack.optimize.CommonsChunkPlugin(&#123;</span><br><span class="line">  name: <span class="string">'app'</span>,</span><br><span class="line">  <span class="keyword">async</span>: <span class="string">'vendor-async'</span>,</span><br><span class="line">  children: <span class="literal">true</span>,</span><br><span class="line">  minChunks: <span class="number">3</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>上述代码可以简化为：<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> webpack.optimize.CommonsChunkPlugin(&#123;</span><br><span class="line">  name: <span class="string">'app'</span>,</span><br><span class="line">  <span class="keyword">async</span>: <span class="string">'vendor-async'</span>,</span><br><span class="line">  minChunks: <span class="number">3</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure></p>
+<h3 id="打包自定义公共模块"><a href="#打包自定义公共模块" class="headerlink" title="打包自定义公共模块"></a>打包自定义公共模块</h3><p>这个配置是生成的文件中没有的，我们的系统只有一个入口文件，也不需要这个。写在这里是怕以后忘记了。</p>
+<p>从 <code>first222</code> 与 <code>second111</code> 文件中提取公共模块，并打包到 <code>common</code> 文件。此处的 <code>first222</code> 与 <code>second111</code> 对应的是 <code>entry</code> 处定义的模块名。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">entry: &#123;</span><br><span class="line">  app: <span class="string">'./src/main.js'</span>,</span><br><span class="line">  first222: <span class="string">'./src/first.js'</span>,</span><br><span class="line">  second111: <span class="string">'./src/second.js'</span></span><br><span class="line">  <span class="comment">// third: './src/third.js'</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> webpack.optimize.CommonsChunkPlugin(&#123;</span><br><span class="line">  name: <span class="string">'common'</span>,</span><br><span class="line">  chunks: [<span class="string">'first222'</span>,<span class="string">'second111'</span>]</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/webpack3/" rel="tag"># webpack3</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://avatars3.githubusercontent.com/u/23374615?s=460&v=4" alt="heyyihai">
+            
+              <p class="site-author-name" itemprop="name">heyyihai</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">1</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">1</span>
+                    <span class="site-state-item-name">分类</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">1</span>
+                    <span class="site-state-item-name">标签</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/heyyihai" title="GitHub &rarr; https://github.com/heyyihai" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#简介"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#可配置属性"><span class="nav-number">2.</span> <span class="nav-text">可配置属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#项目代码示例"><span class="nav-number">3.</span> <span class="nav-text">项目代码示例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#打包第三方库"><span class="nav-number">3.1.</span> <span class="nav-text">打包第三方库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#打包-webpack-运行文件与模块清单"><span class="nav-number">3.2.</span> <span class="nav-text">打包 webpack 运行文件与模块清单</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#打包异步文件"><span class="nav-number">3.3.</span> <span class="nav-text">打包异步文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#打包自定义公共模块"><span class="nav-number">3.4.</span> <span class="nav-text">打包自定义公共模块</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">heyyihai</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v6.6.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=6.6.0"></script>
+
+  <script src="/js/src/motion.js?v=6.6.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=6.6.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=6.6.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=6.6.0"></script>
+<script src="/js/src/post-details.js?v=6.6.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=6.6.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
